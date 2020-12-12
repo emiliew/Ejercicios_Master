@@ -1,4 +1,4 @@
-import requests
+import requests #if not installed in Windows: pip install requests
 
 # función que imprime por pantalla cada uno de los comentarios
 def printComment(comment):
