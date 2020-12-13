@@ -22,4 +22,3 @@ response = requests.get(url)
 # convierte la respuesta a un diccionario Python
 jsonList = response.json()
 printComments(jsonList)
-print("prueba Git")
