@@ -1,0 +1,151 @@
+---
+title: "Práctica de R"
+output:
+  html_document:
+     df_print: kable
+  pdf_document: default
+---
+
+
+```{r setup, include=FALSE}
+## incluir librerias aqui
+```
+
+## Instrucciones
+
+  * La práctica se evalúa sobre 10 puntos. Consta de 16 ejercicios, los 10 primeros (1-10) son considerados **básicos** y valen 0.5 puntos. Los 4 siguientes (11-14) son **intermedios** y valen 0.75 puntos. Los 2 siguientes (15-16) son **avanzados** y valen 1 punto.
+  
+  * Los términos **tibble** y **dataframe** se usan indistintamente, por lo que los resultados pueden estar contenidos en cualquiera de los dos.
+  
+  * Los ejercicios se realizan todos sobre el dataframe resultado del Ejercicio 1.
+  
+  * Para acceder a columnas que tienen espacios en su nombre hay que usar la sintáxis \`nombre columna\`, con comillas invertidas ``
+  
+  * Para resolver los ejercicios se pueden utilizar indistintamente funciones de R base o de paquetes adicionales, aunque se recomienda el uso de las funciones del *tidyverse*. Si se usan librerías no incluidas en el tidyverse es necesario escribir las sentencias `library` que las cargan.
+  
+  * Es conveniente (y se valorará) utilizar un  estilo  de  programación adecuado. Algunas  directrices pueden encontrarse en la guía de estilo [http://style.tidyverse.org/](http://style.tidyverse.org/).
+  
+  * En cada ejercicio, se valorará que el código sea:
+    - Correcto
+    - Claro
+    - Conciso
+    - General
+    
+## Enunciado
+
+1. Leer el fichero *penguins_raw.csv* como un dataframe con nombre `penguins_raw`. Convertir la columna `Sample Number` a tipo `<int>` en la *misma llamada* a la función que lee los datos.
+ NOTA: si no se realiza este ejecicio ejecutar el siguiente código:
+ 
+    ```{r, eval=FALSE, echo=TRUE, include=TRUE}
+    install.packages("palmerpenguins")
+    library(palmerpenguins)
+    ```
+  
+   Una vez ejecutado tendréis disponible un dataframe con nombre `penguins_raw` que debería de ser idéntico al resultado del ejercicio 1. El resto de ejercicios se realizan sobre este dataframe 
+  
+    ```{r}
+    library(tidyverse)
+    penguins_raw <- read_csv("penguins_raw.csv",
+        col_types = cols("Sample Number" = col_integer()))
+    ```
+  
+2. Crear otro dataframe que tenga las filas de `penguins_raw` donde el valor de `Region` es `Anvers` y el valor de `Body Mass (g)` es mayor que 3500
+     
+    ```{r}
+    ## codigo aqui
+    ```
+  
+3. Crear otro dataframe que tenga las columnas de `penguins_raw` excepto las dos que empiezan por "Delta"
+  
+    ```{r}
+    ## codigo aqui
+    ```
+  
+4. Contar cuantas filas hay en el dataframe para cada uno de los valores de la columna `Species`
+     
+    ```{r}
+    ## codigo aqui
+    ```
+
+5. Convertir la columna `Clutch Completion` a tipo lógico, donde `Yes` tiene que tener el valor `TRUE` y `No` el valor `False`.
+  
+    ```{r}
+    ## codigo aqui
+    ```
+  
+6. Realizar un gráfico de barras con el número de filas para cada uno de los valores de `Island`. Además hacer un gráfico para cada valor de `Sex`, usando **facetas**
+ 
+    ```{r}
+    ## codigo aqui
+    ```
+ 
+7. Realizar un gráfico de puntos que represente en el eje x la columna `Culmen Length (mm)` y en el eje y la columna `Flipper Length (mm)`. Colorear los puntos de acuerdo con los valores de `Species`
+ 
+    ```{r}
+    ## codigo aqui
+    ```
+  
+8. Crear una nueva columna llamada `Generic_name` a partir de `Species` que contenga la primera palaba (hasta el espacio). Ejemplo: si la columna `Species` tiene el valor `Adelie Penguin (Pygoscelis adeliae)` la columna `Generic_name` deberia de tener el valor `Adelie`
+  
+    ```{r}
+    ## codigo aqui
+    ``` 
+  
+9. Crear una nueva columna `Year_Egg` a partir de `Date Egg` que contenga la parte del año.
+  
+    ```{r}
+    ## codigo aqui
+    ```
+
+10. Crear una nueva variable, `Sex_new`, con los valores `MASCULINO` cuando `Sex` es `MALE` y `FEMENINO` cuando `Sex` es `FEMALE`
+
+    ```{r}
+    ## codigo aqui
+    ```
+
+11. Sustituir los espacios en los nombres de las columnas por "_"
+  
+    ```{r}
+    ## codigo aqui
+    ```
+
+12. Crear una nueva variable, `Size` con los valores `small` si `0 < Body Mass (g) < 3500`, `medium` si `3500 <= Body Mass (g) < 4500` y `big` si `4500 <= Body Mass (g) < 6500`
+
+    ```{r}
+    ## codigo aqui
+    ```
+
+13. Crear una nueva columna llamada `Specific_name` a partir de `Species` que contenga la parte que está entre paréntesis `()`. Ejemplo: si la columna `Species` tiene el valor `Adelie Penguin (Pygoscelis adeliae)` la columna `Specific_name` debería de tener el valor `Pygoscelis adeliae`
+
+    ```{r}
+    ## codigo aqui
+    ```
+
+14. Dado el siguiente código para calcular el valor más frecuente de un vector `x` de tipo `character`:
+    
+    ```{r, eval=FALSE, echo=TRUE, include=TRUE}
+    unique_x <- unique(x)
+    unique_x[which.max(tabulate(match(x, unique_x)))]
+    ```
+ 
+    Convertirlo en una función con nombre `most_freq`. Usar la función anterior para crear una nueva columna a partir de `Sex`, `Sex_no_NA`, pero completando los valores que son `NA` con el valor más frecuente de `Sex` pero agrupado por `Species`.
+ 
+    ```{r}
+    ## codigo aqui
+    ```
+
+15. Calcular el número de valores `NA` en cada una de las columnas. Representar el resultado en un dataframe que tenga dos columnas, "Column" y "N_NA", que contengan respectivamente el nombre de la columna de `penguins_raw` y el número de valores que son `NA` con las filas ordenadas de mayor a menor de acuerdo a "N_NA".
+
+    Además, representar con un gráfico de barras el dataframe anterior, excepto la fila de "Comments" y todas aquellas que tienen 0 en "N_NA". El gráfico resultante (nombre de los ejes, orden, etc.) será como el siguiente:
+  
+    ```{r}
+    ## codigo aqui
+    ```
+
+16. Calcular el mínimo y el máximo de todas las columnas numéricas. Representar el resultado en un dataframe con el siguiente formato:
+  
+    ```{r}
+    ## codigo aqui
+    ```
+
+ 
