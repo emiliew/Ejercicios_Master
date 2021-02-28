@@ -1,0 +1,374 @@
+---
+title: "PEC1 - AE"
+author: "Emilio Molina"
+date: "11/2/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+```
+
+#Parte 1
+
+1. En League of Legends, la variable de rendimiento más importante posiblemente sea el oro acumulado durante la partida. En el dataset se encuentra en la columna “goldEarned”. Se pide:
+
++ a) Cargar el fichero “matchesA.csv”.
+```{r Ejercicio 1.a}
+(matchesA = read.table("matchesA.csv", sep = ",", header = TRUE))
+```
+
++ b) Calcular la media de oro sin usar funciones directas de R.
+```{r Ejercicio 1.b}
+oro = matchesA["goldEarned"][,1]
+n = length(oro)
+(mediaOroManual = sum(oro) / n)
+```
+
++ c) Comprobar que la media de oro, calculada usando funciones directas de R, coincide con la anterior.
+```{r Ejercicio 1.c}
+(mediaOroDirecta = mean(oro))
+mediaOroManual == mediaOroDirecta
+```
+
++ d) Calcular la desviación típica sin usar funciones directas de R.
+```{r Ejercicio 1.d}
+oroDesvs = oro - mediaOroManual
+(desvTipManual = sqrt((sum(oroDesvs ^ 2) / (n - 1))))
+```
+
++ e) Comprobar que la desviación típica, calculada usando funciones directas de R, coincide con la anterior.
+```{r Ejercicio 1.e}
+(desvTipDirecta = sd(oro))
+desvTipManual == desvTipDirecta
+```
+
++ f) Obtener el valor máximo y mínimo y el rango.
+```{r Ejercicio 1.f}
+(oroMin = min(oro))
+(oroMax = max(oro))
+(oroRango = range(oro))
+```
+
++ g) Calcular los cuartiles de la variable oro.
+```{r Ejercicio 1.g}
+quantile(oro, c(0.25,0.5,0.75))
+```
+
++ h) Dibujar el histograma para el oro ganado.
+```{r Ejercicio 1.h}
+hist(oro)
+```
+
+
+2. En este tipo de juegos, el número de kills (enemigos derrotados), assists (asistencias a compañeros) o deaths (veces que se ha muerto) por sí solos no suelen ser muy indicativos, porque dependen de la longitud de la partida. Para ello, se suele usar una medida llamada KDA. El KDA se calcula sumando los kills y los assists, y luego dividiendo por el número de deaths (las columnas están en el dataset). Crea un vector que contenga, para cada jugador, su KDA.
+```{r Ejercicio 2}
+kda = (matchesA["kills"][,1] + matchesA["assists"][,1]) / matchesA["deaths"][,1]
+```
+
+
+3. No obstante, nos podemos haber dado cuenta de una cosa: estamos mezclando partidas GANADAS y partidas PERDIDAS. Así, quizás las medias sean distintas en ambos casos. Necesitamos:
+
++ a) Calcular la media del oro obtenido tanto en las partidas perdidas como en las ganadas.
+```{r Ejercicio 3.a}
+(oroPorResultado = matchesA %>% 
+  group_by(win) %>%
+  summarise(mediaOro = mean(goldEarned), .groups = 'drop'))
+```
+
++ b) Calcular también por separado la desviación típica del oro ganado.
+```{r Ejercicio 3.b}
+(desvTipPorResultado = matchesA %>% 
+  group_by(win) %>%
+  summarise(desvTipOro = sd(goldEarned), .groups = 'drop'))
+```
+
++ c) Calcular la mediana del oro obtenido en las partidas perdidas y el obtenido en las ganadas.
+```{r Ejercicio 3.c}
+(medianaPorResultado = matchesA %>% 
+  group_by(win) %>%
+  summarise(medianaOro = median(goldEarned), .groups = 'drop'))
+```
+
++ d) Calcular los cuartiles para ambos casos.
+```{r Ejercicio 3.d}
+(CuartilesPorResultado = matchesA %>% 
+  group_by(win) %>%
+  summarise("Cuartil 1" = quantile(goldEarned, c(0.25)), "Cuartil 2" = quantile(goldEarned, c(0.50)), "Cuartil 3" = quantile(goldEarned, c(0.75)), .groups = 'drop'))
+```
+
++ e) Comentar los resultados obtenidos teniendo en cuenta el contexto de
+los datos.
+
+Tanto las medidas de tendencia central como las de dispersión están "derecheadas", lo cual indica que por lo general el oro ganado es superior en las partidas ganadas. También, dada la mayor desviación típica podemos afirmar que hay más variabilidad con respecto a la media en las partidas ganadas, siendo más homogénea en las perdidas.
+
+
+
+
+#Parte 2
+
+4. Vamos a intentar determinar la probabilidad de obtener un tipo u otro de carta. Para ello:
+
++ a) Carga el dataset.
+```{r Ejercicio 4.a}
+(BoosterPackA = read.table("BoosterPacksA.csv", sep = ",", header = TRUE))
+```
+
++ b) Rellena la tabla (con las frecuencias absolutas y relativas de cada caso).
+```{r Ejercicio 4.b}
+(tablaFrecs = BoosterPackA %>% 
+   summarise_all(~sum(.)) %>%
+   select(-Pack,-Mana) %>%
+   gather(value = "freqAbs") %>%
+   mutate(freqRel = (freqAbs/sum(freqAbs))) %>%
+   bind_rows(summarize_all(., funs(if (is.numeric(.)) sum(.) else 'Total'))))
+
+(tablaEj = data.frame(row.names = c("Cartas Totales", "Prob. relativa"), 
+                       Com = c(tablaFrecs[1,"freqAbs"], tablaFrecs[1,"freqRel"]),
+                       Rare = c(tablaFrecs[2,"freqAbs"], tablaFrecs[2,"freqRel"]),
+                       gRare = c(tablaFrecs[6,"freqAbs"], tablaFrecs[6,"freqRel"]),
+                       "No Dorada" = c(sum(tablaFrecs[1:4,"freqAbs"]), sum(tablaFrecs[1:4,"freqRel"])),
+                       Dorada = c(sum(tablaFrecs[5:8,"freqAbs"]), sum(tablaFrecs[5:8,"freqRel"]))))
+```
+
+5. Del ejercicio anterior tenemos la probabilidad de que una carta sea dorada o no dorada. Si una baraja de Hearthstone tiene 30 cartas en total y la construyo aleatoriamente a partir de mi muestra, calcula la probabilidad de que:
+
++ a) Tenga exactamente una carta dorada.
+
+Sería una función de densidad de distribución binomial de un acierto, $P(X = 1)$sobre 30 observaciones.
+
+```{r Ejercicio 5.a}
+(probDorada = sum(tablaFrecs[5:8,"freqRel"]))
+(prob1Dorada = dbinom(1, 30, probDorada))
+```
+
++ b) Haya, como mucho, tres cartas doradas.
+
+Función de distribución binomial de $P(X \leqslant 3)$ sobre 30 observaciones:
+
+```{r Ejercicio 5.b}
+(prob3DoradasMax = sum(pbinom(3, 30, probDorada)))
+
+```
+
++ c) Tenga más cartas doradas que normales.
+
+Según las funciones de la probabilidad, $P(X>15)=1-P(X \leqslant 15)$:
+
+```{r Ejercicio 5.c}
+(probMasDoradas = 1 - pbinom(15, 30, probDorada))
+```
+
+
+
+#Parte 3
+
+6. Luka Doncic, jugador de baloncesto de los Dallas Mavericks, tiene un porcentaje de acierto en tiros de triple del 32%. Si en un partido concreto hace 12 intentos desde la línea de triples...
+
++ a) ¿cuál es la probabilidad de que acierte exactamente dos?
+
+Función de densidad de distribución binomial de dos aciertos, $P(X = 2)$sobre 12 observaciones.
+
+```{r Ejercicio 6.a}
+(probTriple = 0.32)
+(prob2TriplesDirect = dbinom(2, 12, probTriple))
+```
+
++ b) ¿cuál es la probabilidad de que no los meta todos?
+
+Función de distribución binomial de $P(X \leqslant 11)$ sobre 12 observaciones.
+
+```{r Ejercicio 6.b}
+(probAlgunFalloP = pbinom(11, 12, probTriple))
+```
+
++ c) ¿y la probabilidad de que enceste entre 4 y 8 (ambos inclusive)?
+
+Podemos restar las funciones de distribución binomial $P(4 \leqslant X \leqslant 8) = P(X \leqslant 8) - P(X \leqslant 3)$ (al ser valores discretos y estar el 4 incluido).
+
+```{r Ejercicio 6.c}
+(probAlgunFalloOtra = pbinom(8, 12, probTriple) - pbinom(3,12,probTriple))
+```
+
++ d) ¿cuál sería la mediana? (Es decir, ¿en qué número de aciertos
+dejamos el 50% de la probabilidad a cada lado?).
+```{r Ejercicio 6.d}
+(round((dbinom(0:12, 12, probTriple)), 2)) #para visualizar todas las funciones de densidad.
+(mediana = qbinom(0.5, 12, probTriple)) #calculamos el cuantil 50
+print(paste('Con', mediana-1, 'aciertos, dejamos el 50% a cada lado.'))
+```
+
+
+7. Cuando hago muffins (o magdalenas grandes) les pongo pepitas de chocolate. Voy a hacer 100 magdalenas y tengo 300 pepitas de chocolate que reparto de forma homogénea en toda la masa. Si cojo la masa para una magdalena:
+
++ a) ... ¿cuál es la probabilidad de que no contenga pepitas de chocolate?
+
+Puede considerarse como una distribución de Poisson, que busca la probabilidad de aparición de n pepitas con un ration de aparición estable (λ = 300 pepitas / 100 galletas = 3).
+
+La función sería $P(r) = \frac{\lambda^r}{r!}e^{-\lambda}$. En el caso de 0 pepitas sería $P(0) = \frac{3^0}{0!}e^0$.
+
+```{r Ejercicio 7.a}
+(prob0pepitas = (3^0/factorial(0))*exp(-3))
+(prob0pepitasbis = dpois(0,3))
+```
+
++ b) ¿cuál es la probabilidad de que tenga más de 5 pepitas?
+
+Según las funciones de la probabilidad, $P(X>5)=1-P(X \leqslant 5)$:
+
+```{r Ejercicio 7.b}
+(probMas5pepitasbis = 1 - ppois(5,3))
+```
+
++ c) ¿y la probabilidad de que tenga entre 2 y 4 (ambos inclusive)?
+
+Podemos restar las funciones de distribución binomial $P(2 \leqslant X \leqslant 4) = P(X \leqslant 4) - P(X \leqslant 1)$ (al ser valores discretos y estar el 2 incluido).
+
+```{r Ejercicio 7.c}
+(prob2a4Pepitasbis = ppois(4, 3) - ppois(1, 3))
+```
+
++ d) ¿cuál sería la mediana? (Es decir, ¿en qué número de pepitas dejamos el 50% de la probabilidad a cada lado?).
+
+```{r Ejercicio 7.d}
+(round((dpois(0:100, 3)), 2))#para visualizar todas las funciones de densidad.
+(medianaPepitas = qpois(0.5, 3))#calculamos el cuantil 50
+print(paste('Con', medianaPepitas-1, 'pepitas, dejamos el 50% a cada lado.'))
+```
+
+
+
+#Parte 4
+
+8. El coeficiente intelectual de las personas sigue una distribución normal.
+
++ a) Si sabemos que lo hace con una media de 100 y una desviación estándar de 16:
+
+++ i. ¿Cuál es la probabilidad de encontrar a una persona con un coeficiente intelectual superior a 125?
+
+Según la probabilidad $P(X>125)=1-P(X \leqslant 125)$, por lo que podemos aplicar esto con la función de densidad normal:
+```{r Ejercicio 8.a.i}
+(probMas125 = 1 - pnorm(125, 100, 16))
+```
+
+++ ii. ¿Y que tenga el coeficiente intelectual entre 90 y 120?
+
+Podemos restar las funciones de distribución normal $P(90 \leqslant X \leqslant 120) = P(X \leqslant 120) - P(X \leqslant 89)$ (al ser valores discretos y estar el 90 incluido).
+
+```{r Ejercicio 8.a.ii}
+(pnorm(120, 100, 16) - pnorm(89, 100, 16))
+```
+
++ b) Hemos cogido a 50 alumnos que han realizado el test de IQ y su media es de 96.
+
+++ i. Calcula el intervalo de confianza al 95% para la media poblacional del IQ de los alumnos. Puedes suponer que la desviación estándar es la misma que en el caso (a).
+
+Sabemos que es una distribución normal, conocemos la varianza poblacional ($σ = 16$) y la media muestral ($x = 96$). La fórmula sería: $(x - (z_{\alpha/2} * \frac{σ}{\sqrt{n}}), x + (z_{\alpha/2} * \frac{σ}{\sqrt{n}}))$
+```{r Ejercicio 8.b.i}
+n = 50
+x = 96
+s = 16
+nc = 0.95
+alfa = 1 - nc
+print("z_alfa2:")
+
+(z_alfa2 = qnorm(1 - alfa/2))
+print("Intervalo de confianza:")
+(intervalo = x + c(-1,1) * z_alfa2 * s / sqrt(n))
+```
+
+++ ii. ¿Podríamos decir que, con el 95% de confianza, la media de los alumnos es la misma que la general descrita en (a)?
+
+Podemos contrastar las hipótesis, siendo estas $H_0 = 100$ y $H_A \neq 100 = 96$. Lo haremos sobre $z_0 = \frac{\bar x - \mu}{\frac{\sigma}{\sqrt{n}}}$:
+
+```{r Ejercicio 9.b.ii}
+(z0 = (96-100) / (16/sqrt(50)))
+```
+Por lo tanto, teniendo $z_{\alpha/2}=1.95$, el contraste sería $-z_{\alpha/2}<z_0<z_{\alpha/2} \rightarrow -1.96 < 1.77 < 1.96$. La hipótesis sería válida y la afirmación no podría rechazarse.
+
+
+9. El peso de un niño al nacer sigue una distribución normal.
+
++ a) Si sabemos que lo hace con una media de 2950 g y una desviación estándar de 300:
+
+++ i. ¿Cuál es la probabilidad de que nazca un niño con un peso menor a 3100 g?
+
+Podemos aplicar la función de densidad normal ya que, como la función es continua, siempre se cumple la igualdad $P(X<3100) = P(X \leqslant 3100)$:
+```{r Ejercicio 9.a.i}
+#Dado que es una función continua, se cumple que  P(X<k) = P(X<=k)
+(pnorm(3100, 2950, 300))
+```
+
+++ ii. ¿Y que pese menos de 2750g o más de 3250g?
+
+Podemos sumar las funciones de distribución normal $P(X \leqslant 2750) + P(X > 3250)$ considerando que $P(X > 3250) = 1 - P(X\leqslant 3250)$.
+
+```{r Ejercicio 9.a.ii}
+
+(pnorm(2750, 2950, 300) + (1 - pnorm(3250, 2950, 300)))
+```
+
++ b) Hemos cogido a 40 bebés varones que han nacido esta semana en Madrid y su media es de 3000.
+
+++ i. Calcula el intervalo de confianza al 90% para la media poblacional del peso de los bebés. Puedes suponer que la desviación estándar es la misma que en el caso (a).
+
+Sabemos que es una distribución normal, conocemos la varianza poblacional (σ = 300) y la media muestral (x = 3000). La fórmula sería: $(x - (z_{\alpha/2} * \frac{σ}{\sqrt{n}}), x + (z_{\alpha/2} * \frac{σ}{\sqrt{n}}))$
+
+```{r Ejercicio 9.b.i}
+n = 40
+x = 3000
+s = 300
+nc = 0.90
+alfa = 1 - nc
+print("z_alfa2:")
+(z_alfa2 = qnorm(1 - alfa/2))
+print("Intervalo de confianza:")
+(intervalo = x + c(-1,1) * z_alfa2 * s / sqrt(n))
+```
+
+++ ii. ¿Podríamos decir que, con el 90% de confianza, los bebés nacidos en Madrid son más gorditos que la media habitual?
+
+Podemos contrastar las hipótesis, siendo estas $H_0 = 2950$ y $H_A \neq 2950 = 3000$. Lo haremos sobre $z_0 = \frac{\bar x - \mu}{\frac{\sigma}{\sqrt{n}}}$:
+
+```{r Ejercicio 9.b.ii}
+(z0 = (3000-2950) / (300/sqrt(40)))
+```
+Por lo tanto, teniendo $z_{\alpha/2}=1.64$, el contraste sería $-z_{\alpha/2}<z_0<z_{\alpha/2} \rightarrow -1.64 < 1.05 <1.64$. La hipótesis sería válida y la afirmación no podría rechazarse.
+
+
+10. Las notas de estadística siguen una distribución normal.
+
++ a) Si sabemos que lo hacen con una media de 5.8 y una desviación estándar de 1.7:
+
+++ i. ¿Cuál es la probabilidad de encontrar a un alumno con una nota menor a 5?
+
+Dado que es una función continua, se cumple que  $P(X<k) = P(X\leqslant k)$:
+
+```{r Ejercicio 10.a.i}
+(pnorm(5, 5.8, 1.7))
+```
+
+++ ii. ¿Y que haya sacado entre 5 y 8?
+
+Podemos restar las funciones de distribución normal $P(5 \leqslant X \leqslant 8) = P(X \leqslant 8) - P(X < 5)$ considerando que $P(X<5) = P(X\leqslant 5)$ al ser continua.
+
+```{r Ejercicio 10.a.ii}
+(pnorm(8, 5.8, 1.7) - pnorm(5, 5.8, 1.7))
+```
+
++ b) 35 alumnos de esta clase han sacado un 6 de media en la asignatura.
+
+Sabemos que es una distribución normal, conocemos la varianza poblacional (σ = 1.7) y la media muestral (x = 6). La fórmula sería: $(x - (z_{\alpha2} * \frac{σ}{\sqrt{n}}), x + (z_{\alpha2} * \frac{σ}{\sqrt{n}}))$
+
+```{r Ejercicio 10.b}
+n = 35
+x = 5.8
+s = 1.7
+nc = 0.95
+alfa = 1 - nc
+print("z_alfa2:")
+z_alfa2 = qnorm(1 - alfa/2)
+print("Intervalo de confianza:")
+(intervalo = x + c(-1,1) * z_alfa2 * s / sqrt(n))
+```

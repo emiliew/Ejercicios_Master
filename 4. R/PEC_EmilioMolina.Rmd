@@ -8,7 +8,8 @@ output:
 
 
 ```{r setup, include=FALSE}
-## incluir librerias aqui
+library(tidyverse)
+library(lubridate)
 ```
 
 ## Instrucciones
@@ -44,7 +45,6 @@ output:
    Una vez ejecutado tendréis disponible un dataframe con nombre `penguins_raw` que debería de ser idéntico al resultado del ejercicio 1. El resto de ejercicios se realizan sobre este dataframe 
   
     ```{r}
-    library(tidyverse)
     penguins_raw <- read_csv("penguins_raw.csv",
         col_types = cols("Sample Number" = col_integer()))
     ```
@@ -52,73 +52,92 @@ output:
 2. Crear otro dataframe que tenga las filas de `penguins_raw` donde el valor de `Region` es `Anvers` y el valor de `Body Mass (g)` es mayor que 3500
      
     ```{r}
-    ## codigo aqui
+    penguins_raw %>%
+        filter(Region == "Anvers" & `Body Mass (g)` > 3500) -> penguins_Anvers_3500
     ```
   
 3. Crear otro dataframe que tenga las columnas de `penguins_raw` excepto las dos que empiezan por "Delta"
   
     ```{r}
-    ## codigo aqui
+    penguins_raw %>%
+        select(-starts_with("Delta")) -> penguins_noDelta    
     ```
   
 4. Contar cuantas filas hay en el dataframe para cada uno de los valores de la columna `Species`
      
     ```{r}
-    ## codigo aqui
+    penguins_raw %>%
+        count(Species)
     ```
 
 5. Convertir la columna `Clutch Completion` a tipo lógico, donde `Yes` tiene que tener el valor `TRUE` y `No` el valor `False`.
   
     ```{r}
-    ## codigo aqui
+    penguins_raw$'Clutch Completion' %>% 
+        str_replace_all(c("Yes" = "True", "No" = "False")) %>%
+        parse_logical() -> penguins_raw$'Clutch Completion'
     ```
   
 6. Realizar un gráfico de barras con el número de filas para cada uno de los valores de `Island`. Además hacer un gráfico para cada valor de `Sex`, usando **facetas**
  
     ```{r}
-    ## codigo aqui
+    penguins_raw %>%
+        ggplot() + geom_bar(aes(Island)) + facet_wrap(~Sex)
     ```
  
 7. Realizar un gráfico de puntos que represente en el eje x la columna `Culmen Length (mm)` y en el eje y la columna `Flipper Length (mm)`. Colorear los puntos de acuerdo con los valores de `Species`
  
     ```{r}
-    ## codigo aqui
+    penguins_raw %>%
+        ggplot() + 
+            geom_point(aes(get('Culmen Length (mm)'), get('Flipper Length (mm)')))
     ```
   
 8. Crear una nueva columna llamada `Generic_name` a partir de `Species` que contenga la primera palaba (hasta el espacio). Ejemplo: si la columna `Species` tiene el valor `Adelie Penguin (Pygoscelis adeliae)` la columna `Generic_name` deberia de tener el valor `Adelie`
   
     ```{r}
-    ## codigo aqui
+    penguins_raw %>%
+        mutate(Generic_name = str_extract(Species, "^([^ ]*)"))
     ``` 
   
 9. Crear una nueva columna `Year_Egg` a partir de `Date Egg` que contenga la parte del año.
   
     ```{r}
-    ## codigo aqui
+    penguins_raw %>%
+        mutate(Year_Egg = year(get('Date Egg')))
     ```
 
 10. Crear una nueva variable, `Sex_new`, con los valores `MASCULINO` cuando `Sex` es `MALE` y `FEMENINO` cuando `Sex` es `FEMALE`
 
     ```{r}
-    ## codigo aqui
+    penguins_raw %>%
+      mutate(Sex_new = case_when(
+        Sex == 'MALE' ~ 'MASCULINO', 
+        Sex == 'FEMALE' ~ 'FEMENINO'))
     ```
 
 11. Sustituir los espacios en los nombres de las columnas por "_"
   
     ```{r}
-    ## codigo aqui
+    (colnames(penguins_raw) <- colnames(penguins_raw) %>%
+      str_replace_all(" ", "_"))
     ```
 
 12. Crear una nueva variable, `Size` con los valores `small` si `0 < Body Mass (g) < 3500`, `medium` si `3500 <= Body Mass (g) < 4500` y `big` si `4500 <= Body Mass (g) < 6500`
 
     ```{r}
-    ## codigo aqui
+    penguins_raw %>%
+      mutate(Size = case_when(
+        penguins_raw['Body_Mass_(g)'] < 3500 ~ 'small', 
+        (penguins_raw['Body_Mass_(g)'] >= 3500 & penguins_raw['Body_Mass_(g)'] < 4500) ~ 'medium', 
+        (penguins_raw['Body_Mass_(g)'] >= 4500 & penguins_raw['Body_Mass_(g)'] < 6500) ~ 'big'))
     ```
 
 13. Crear una nueva columna llamada `Specific_name` a partir de `Species` que contenga la parte que está entre paréntesis `()`. Ejemplo: si la columna `Species` tiene el valor `Adelie Penguin (Pygoscelis adeliae)` la columna `Specific_name` debería de tener el valor `Pygoscelis adeliae`
 
     ```{r}
-    ## codigo aqui
+    penguins_raw %>%
+      mutate(Specific_name = str_remove_all(str_extract(Species, "\\(.*\\)"), "[()]"))
     ```
 
 14. Dado el siguiente código para calcular el valor más frecuente de un vector `x` de tipo `character`:
@@ -131,7 +150,29 @@ output:
     Convertirlo en una función con nombre `most_freq`. Usar la función anterior para crear una nueva columna a partir de `Sex`, `Sex_no_NA`, pero completando los valores que son `NA` con el valor más frecuente de `Sex` pero agrupado por `Species`.
  
     ```{r}
-    ## codigo aqui
+    most_freq <- function(x){
+      unique_x <- unique(x)
+      most_freq <- unique_x[which.max(tabulate(match(x, unique_x)))]
+    }
+    
+  #La nueva función trabaja con vectores, por lo que tengo que pasarle la lista vectorizada con el método unlist():
+    
+  penguins_raw %>%
+      group_by(Species) %>%
+      mutate(Sex_no_NA = replace_na(Sex, most_freq(unlist(Sex))))
+  
+  #Hago la prueba eliminando algunos pingüinos macho del primer grupo para asegurar que funciona correctamente:
+  
+  testP <- penguins_raw[-c(1, 6),]
+  
+  testP %>%
+      group_by(Species) %>%
+      count(Sex)
+    
+  testP %>%
+      group_by(Species) %>%
+      mutate(Sex_no_NA = replace_na(Sex, most_freq(unlist(Sex))))
+
     ```
 
 15. Calcular el número de valores `NA` en cada una de las columnas. Representar el resultado en un dataframe que tenga dos columnas, "Column" y "N_NA", que contengan respectivamente el nombre de la columna de `penguins_raw` y el número de valores que son `NA` con las filas ordenadas de mayor a menor de acuerdo a "N_NA".
@@ -139,13 +180,30 @@ output:
     Además, representar con un gráfico de barras el dataframe anterior, excepto la fila de "Comments" y todas aquellas que tienen 0 en "N_NA". El gráfico resultante (nombre de los ejes, orden, etc.) será como el siguiente:
   
     ```{r}
-    ## codigo aqui
+    (DF_NA <- penguins_raw %>%
+      map_df(~sum(is.na(.))) %>%
+      gather(Column, N_NA) %>%
+      arrange(desc(N_NA)))
+    
+    DF_NA$Column <- factor(DF_NA$Column, DF_NA$Column[order(DF_NA$N_NA)]) #factorizo columnas y  reordeno en función de N_NA
+
+    DF_NA %>%
+      filter(Column != 'Comments', N_NA != 0) %>%
+      ggplot(aes(N_NA, Column)) + geom_col() + labs (y = "Columnas", x = "Número de valores NA")
     ```
 
 16. Calcular el mínimo y el máximo de todas las columnas numéricas. Representar el resultado en un dataframe con el siguiente formato:
   
     ```{r}
-    ## codigo aqui
+    #Calculo de modo independiente, y de igual manera, mínimo y máximo y hago left join entre ellos.
+    penguins_raw  %>%
+      select_if(is.numeric) %>%
+      map_df(~min(., na.rm = TRUE)) %>%
+      gather(col, min) %>%
+      left_join(by = 'col', penguins_raw  %>%
+          select_if(is.numeric) %>%
+          map_df(~max(., na.rm = TRUE)) %>%
+          gather(col, max))
     ```
 
  
